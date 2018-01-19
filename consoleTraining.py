@@ -1,8 +1,11 @@
 import json
+import heapq as hq
+import random
 
 TYPES = ['8', '1s', '>1s', '10+', '12+', 'alg', 'All types']
 ALL_TYPES = TYPES[-1]
 PATH_TO_JSON = 'data/corners.json'
+CORNERS = 'corners'
 
 
 def loadJSON():
@@ -14,19 +17,36 @@ def loadJSON():
 
 def train(dct):
     workingType = workWithType()
-    for word in dct['corners']:
-        if getScore(dct, word) == 0:
-            if TYPES[workingType] == ALL_TYPES or TYPES[workingType] == getType(dct, word):
-                a = input('%s: ' % word)
-                if a == '':
-                    setScore(dct, word, 1)
-                    saveDict(dct)
-                elif a == 'x':
-                    saveAndExit(dct)
+    queue = createPriorityQueue(dct, workingType)
+    continueTraining = True
+
+    while continueTraining:
+        priority, word = hq.heappop(queue)
+        print('\nWord:\t%s' % word)
+        yn = input('Do you know it? (y/n): ')
+
+        if yn == 'y' or yn == '':
+            goodAnswer(dct, word)
+        elif yn == 'n':
+            badAnswer(dct, word)
+        else:
+            continueTraining = False
+
+        saveDict(dct, True)
+
+        if len(queue) == 0:
+            print('\nNo more left commutators.')
+            yn = input('Do you want to continue? (y/n): ')
+            if yn == 'y':
+                queue = createPriorityQueue(dct, workingType)
+            else:
+                continueTraining = False
+
+    saveAndExit(dct)
 
 
 def addAlgs(dct):
-    for word in dct['corners']:
+    for word in dct[CORNERS]:
         if not getAlg(dct, word):    # and getSticker1(word) in ['T', 'W', 'Z']:
             print('Word %s' % word)
             setup = input('Setup: ')
@@ -40,37 +60,46 @@ def addAlgs(dct):
     print('All words have an alg')
 
 
+def getCorners(dct):
+    return dct.get(CORNERS)
+
+
+def getWord(dct, word):
+    return getCorners(dct).get(word)
+
+
 def getAlg(dct, word):
-    return dct.get('corners').get(word).get('alg')
+    return dct.get(CORNERS).get(word).get('alg')
 
 
 def setAlg(dct, word, alg):
-    dct.get('corners').get(word).update({'alg': alg})
+    getWord(dct, word).update({'alg': alg})
 
 
 def getScore(dct, word):
-    return dct.get('corners').get(word).get('score')
+    return getWord(dct, word).get('score')
 
 
 def setScore(dct, word, n):
-    dct.get('corners').get(word).update({'score': n})
+    getWord(dct, word).update({'score': n})
 
 
 def saveAndExit(dct):
     saveDict(dct)
-    exit()
+    exit(0)
 
 
-def saveDict(dct):
+def saveDict(dct, quiet=False):
     f = open(PATH_TO_JSON, 'w', encoding='utf-8')
     json.dump(dct, f, indent=8, ensure_ascii=False)
     f.close()
-    print('Dictionary saved!')
-    input("Press Enter to continue...")
+    if not quiet:
+        print('\nDictionary saved!')
+        input("Press Enter to continue...")
 
 
 def workWithType():
-    print('List of available types of commutators:\n'
+    print('\nList of available types of commutators:\n'
           '\t1 - 8 moves\n'
           '\t2 - 8 moves with 1 setup\n'
           '\t3 - 8 moves with more than 1 setup\n'
@@ -83,7 +112,7 @@ def workWithType():
 
 
 def getType(dct, word):
-    return dct.get('corners').get(word).get('type')
+    return getWord(dct, word).get('type')
 
 
 def createCom(setup, alg1, alg2):
@@ -101,23 +130,23 @@ def createCom(setup, alg1, alg2):
 
 
 def getSticker1(dct, word):
-    return dct.get('corners').get(word).get('sticker1')
+    return getWord(dct, word).get('sticker1')
 
 
 def getSticker2(dct, word):
-    return dct.get('corners').get(word).get('sticker2')
+    return getWord(dct, word).get('sticker2')
 
 
 def setSticker1(dct, word, sticker):
-    dct.get('corners').get(word).update({'sticker1': sticker})
+    getWord(dct, word).update({'sticker1': sticker})
 
 
 def setSticker2(dct, word, sticker):
-    dct.get('corners').get(word).update({'sticker2': sticker})
+    getWord(dct, word).update({'sticker2': sticker})
 
 
 def addCorn(dct):
-    for word in dct['corners']:
+    for word in dct[CORNERS]:
         if getSticker1(dct, word) == None:
             sticker = input('%s: ' % word)
             if sticker == 'x':
@@ -129,15 +158,15 @@ def addCorn(dct):
 
 def testQ(dct):
     count = 0
-    for word in dct['corners']:
-        if dct.get('corners').get(word).get('sticker1') in ['A', 'B', 'C']:
+    for word in dct[CORNERS]:
+        if getWord(dct, word).get('sticker1') in ['A', 'B', 'C']:
             count +=1
             print('%s\t%s' % (word, getAlg(dct, word)))
     print(count)
 
 
 def addMirrorAlg(dct, setup, alg1, alg2, sticker1, sticker2):
-    for word in dct['corners']:
+    for word in dct[CORNERS]:
         if getSticker1(dct, word) == sticker1 and getSticker2(dct, word) == sticker2:
             if alg2:
                 comm = createCom(setup, alg2, alg1)
@@ -150,13 +179,13 @@ def addMirrorAlg(dct, setup, alg1, alg2, sticker1, sticker2):
 
 
 def isChecked(dct, word):
-    return dct.get('corners').get(word).get('checked')
+    return getWord(dct, word).get('checked')
 
 
 def checkAlgs(dct):
-    for word in dct['corners']:
+    for word in dct[CORNERS]:
         if not isChecked(dct, word):
-            print('%s: %s' % (word, getAlg(dct, word)))
+            print('\n%s: %s' % (word, getAlg(dct, word)))
             cmd = input('Is it correct?')
             if cmd == 'n' or cmd == 'N':
                 removeAlg(dct, word)
@@ -168,7 +197,7 @@ def checkAlgs(dct):
 
 
 def setChecked(dct, word, toSet='yes'):
-    dct.get('corners').get(word).update({'checked': toSet})
+    getWord(dct, word).update({'checked': toSet})
 
 
 def removeAlg(dct,word):
@@ -176,22 +205,73 @@ def removeAlg(dct,word):
 
 
 def sortDict(dct):
-    newDct = {'corners': {}}
+    newDct = {CORNERS: {}}
     for i in range(ord('A'), ord('Z') + 1):
         for j in range(ord('A'), ord('Z') + 1):
-            for word in dct['corners']:
+            for word in dct[CORNERS]:
                 if getSticker1(dct, word) == chr(i) and getSticker2(dct, word) == chr(j):
-                    newDct.get('corners').update({word: dct.get('corners')[word]})
-                    # print(dct.get('corners')[word])
+                    newDct.get(CORNERS).update({word: dct.get(CORNERS)[word]})
+                    # print(dct.get(CORNERS)[word])
                     break
     print(newDct)
     dct = newDct
     saveAndExit(dct)
 
-if __name__ == '__main__':
 
-    dctJSON = loadJSON()
+def getNoOfGoodAnswers(dct, word):
+    return getWord(dct, word).get('goodAnswers')
 
+
+def getNoOfBadAnswers(dct, word):
+    return getWord(dct, word).get('badAnswers')
+
+
+def setNoOfGoodAnswers(dct, word, n):
+    getWord(dct, word).update({'goodAnswers': n})
+
+
+def setNoOfBadAnswers(dct, word, n):
+    getWord(dct, word).update({'badAnswers': n})
+
+
+def calculatePriority(g, b):
+    return g / (g + b)
+
+
+def createPriorityQueue(dct, workingType):
+    queue = []
+    for word in dct[CORNERS]:
+        if TYPES[workingType] == ALL_TYPES or TYPES[workingType] == getType(dct, word):
+            g = getNoOfGoodAnswers(dct, word)
+            b = getNoOfBadAnswers(dct, word)
+            if g == 0 and b == 0:
+                priority = 0
+            else:
+                priority = calculatePriority(g, b)
+            hq.heappush(queue, (priority, word))
+    random.shuffle(queue)
+    return queue
+
+
+def goodAnswer(dct, word):
+    print('Good!')
+    g = getNoOfGoodAnswers(dct, word) + 1
+    # b = getNoOfBadAnswers(dct, word)
+    setNoOfGoodAnswers(dct, word, g)
+    # priority = calculatePriority(g, b)
+    # hq.heappush(queue, (priority, word))
+
+
+def badAnswer(dct, word):
+    print('Bad! The commutator is:\t%s' % getAlg(dct, word))
+    # g = getNoOfGoodAnswers(dct, word)
+    b = getNoOfBadAnswers(dct, word) + 1
+    setNoOfBadAnswers(dct, word, b)
+    # priority = calculatePriority(g, b)
+    # hq.heappush(queue, (priority, word))
+
+
+def mainMenu(dct):
     print('List of available commends:\n'
           '\t1 - Train commutators\n'
           '\t2 - Add commutators\n'
@@ -204,16 +284,21 @@ if __name__ == '__main__':
     while True:
         cmd = input('> ')
         if cmd == '1':
-            train(dctJSON)
+            train(dct)
         elif cmd == '2':
-            addAlgs(dctJSON)
+            addAlgs(dct)
         elif cmd == '3':
-            addCorn(dctJSON)
+            addCorn(dct)
         elif cmd == '4':
-            testQ(dctJSON)
+            testQ(dct)
         elif cmd == '5':
-            checkAlgs(dctJSON)
+            checkAlgs(dct)
         elif cmd == '6':
-            sortDict(dctJSON)
+            sortDict(dct)
         elif cmd == '0':
-            saveAndExit(dctJSON)
+            saveAndExit(dct)
+
+if __name__ == '__main__':
+
+    dctJSON = loadJSON()
+    mainMenu(dctJSON)
