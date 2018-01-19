@@ -1,12 +1,7 @@
 import json
 import heapq as hq
 import random
-
-TYPES = ['8', '1s', '>1s', '10+', '12+', 'alg', 'All types']
-ALL_TYPES = TYPES[-1]
-PATH_TO_JSON = 'data/corners.json'
-CORNERS = 'corners'
-
+from constants import *
 
 def loadJSON():
     f = open(PATH_TO_JSON, 'r', encoding='utf-8')
@@ -69,17 +64,19 @@ def getWord(dct, word):
 
 
 def getAlg(dct, word):
-    return dct.get(CORNERS).get(word).get('alg')
+    return dct.get(CORNERS).get(word).get(ALG)
 
 
 def setAlg(dct, word, alg):
-    getWord(dct, word).update({'alg': alg})
+    getWord(dct, word).update({ALG: alg})
 
 
+# deprecated
 def getScore(dct, word):
     return getWord(dct, word).get('score')
 
 
+# deprecated
 def setScore(dct, word, n):
     getWord(dct, word).update({'score': n})
 
@@ -99,20 +96,13 @@ def saveDict(dct, quiet=False):
 
 
 def workWithType():
-    print('\nList of available types of commutators:\n'
-          '\t1 - 8 moves\n'
-          '\t2 - 8 moves with 1 setup\n'
-          '\t3 - 8 moves with more than 1 setup\n'
-          '\t4 - 10 moves (including with setups)\n'
-          '\t5 - 12 moves (including with setups)\n'
-          '\t6 - Variations of permutation A\n'
-          '\t7 - All of above types')
+    print(WORKTYPE_MENU)
     workingType = int(input('Train type: ')) - 1
     return workingType
 
 
 def getType(dct, word):
-    return getWord(dct, word).get('type')
+    return getWord(dct, word).get(TYPE)
 
 
 def createCom(setup, alg1, alg2):
@@ -130,19 +120,19 @@ def createCom(setup, alg1, alg2):
 
 
 def getSticker1(dct, word):
-    return getWord(dct, word).get('sticker1')
+    return getWord(dct, word).get(STICKER1)
 
 
 def getSticker2(dct, word):
-    return getWord(dct, word).get('sticker2')
+    return getWord(dct, word).get(STICKER2)
 
 
 def setSticker1(dct, word, sticker):
-    getWord(dct, word).update({'sticker1': sticker})
+    getWord(dct, word).update({STICKER1: sticker})
 
 
 def setSticker2(dct, word, sticker):
-    getWord(dct, word).update({'sticker2': sticker})
+    getWord(dct, word).update({STICKER2: sticker})
 
 
 def addCorn(dct):
@@ -159,7 +149,7 @@ def addCorn(dct):
 def testQ(dct):
     count = 0
     for word in dct[CORNERS]:
-        if getWord(dct, word).get('sticker1') in ['A', 'B', 'C']:
+        if getWord(dct, word).get(STICKER1) in ['A', 'B', 'C']:
             count +=1
             print('%s\t%s' % (word, getAlg(dct, word)))
     print(count)
@@ -179,7 +169,7 @@ def addMirrorAlg(dct, setup, alg1, alg2, sticker1, sticker2):
 
 
 def isChecked(dct, word):
-    return getWord(dct, word).get('checked')
+    return getWord(dct, word).get(CHECKED)
 
 
 def checkAlgs(dct):
@@ -197,10 +187,10 @@ def checkAlgs(dct):
 
 
 def setChecked(dct, word, toSet='yes'):
-    getWord(dct, word).update({'checked': toSet})
+    getWord(dct, word).update({CHECKED: toSet})
 
 
-def removeAlg(dct,word):
+def removeAlg(dct, word):
     setAlg(dct, word, '')
 
 
@@ -219,19 +209,19 @@ def sortDict(dct):
 
 
 def getNoOfGoodAnswers(dct, word):
-    return getWord(dct, word).get('goodAnswers')
+    return getWord(dct, word).get(GOOD_ANSWERS)
 
 
 def getNoOfBadAnswers(dct, word):
-    return getWord(dct, word).get('badAnswers')
+    return getWord(dct, word).get(BAD_ANSWERS)
 
 
 def setNoOfGoodAnswers(dct, word, n):
-    getWord(dct, word).update({'goodAnswers': n})
+    getWord(dct, word).update({GOOD_ANSWERS: n})
 
 
 def setNoOfBadAnswers(dct, word, n):
-    getWord(dct, word).update({'badAnswers': n})
+    getWord(dct, word).update({BAD_ANSWERS: n})
 
 
 def calculatePriority(g, b):
@@ -272,14 +262,7 @@ def badAnswer(dct, word):
 
 
 def mainMenu(dct):
-    print('List of available commends:\n'
-          '\t1 - Train commutators\n'
-          '\t2 - Add commutators\n'
-          '\t3 - Add corners?\n'
-          '\t4 - Test?\n'
-          '\t5 - Check correctness of commutators\n'
-          '\t6 - Sort dictionary by stickers\n'
-          '\t0 - exit\n')
+    print(MAIN_MENU)
 
     while True:
         cmd = input('> ')
